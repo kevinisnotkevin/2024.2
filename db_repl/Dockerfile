@@ -1,6 +1,6 @@
 FROM postgres
 
-COPY .env .
+#COPY "../.env" .
 
 RUN rm -rf /var/lib/postgresql/data/*
 

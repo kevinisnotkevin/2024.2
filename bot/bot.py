@@ -86,7 +86,9 @@ def echo(update: Update, context):
 
 def get_repl_logs(update: Update, context):
     logging.info(f"Вызвана команда {update.message.text}")
-    sms = chunk_this(manipulate_rm_server(f"docker -H 172.16.180.143 logs db_cont | grep -i repl"))
+    cmd = f"docker -H {RM_HOST} logs db_cont | grep -i repl"
+    logging.info(f"REPL FOR {RM_HOST}. CMD: {cmd}")
+    sms = chunk_this(manipulate_rm_server(cmd))
     for chunk in sms: update.message.reply_text(chunk)
 
 
