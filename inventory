@@ -6,3 +6,20 @@ repl-db ansible_host=172.16.180.154 ansible_user=ansible ansible_password=1 ansi
 
 [tg_bot]
 tg-bot ansible_host=172.16.180.151 ansible_user=ansible ansible_password=1 ansible_python_interpreter=/usr/bin/python3
+
+[all:vars]
+bot_repo=https://github.com/kevinisnotkevin/2024.2.git
+token=7744854845:AAEvznmx-0wnLeQUgZAzcQSp23l76t-U_eM
+rm_host=172.16.180.151
+rm_port=22
+rm_username=ansible
+rm_password=1
+db_host=172.16.180.152
+db_user=postgres
+db_port=5432
+db_password=1
+db_database=postgres
+db_repl_user=repl_user
+db_repl_password=1
+db_repl_host=172.16.180.154
+db_repl_port=5432

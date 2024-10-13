@@ -1,9 +1,86 @@
-- hosts: tg_bot
+- name: Деплой бота и бд
+  hosts: all
+  become: yes
   vars:
     ansible_host_key_checking: false
     ansible_become_pass: "1"
-  become: yes
+
   tasks:
+
+    - name: Установка PostgreSQL
+      apt:
+        name:
+          - postgresql
+        state: present
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Настройка pg_hba.conf
+      copy:
+        src: pg_hba.conf
+        dest: /etc/postgresql/15/main/pg_hba.conf
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Настройка PostgreSQL
+      copy:
+        src: config-postgresql
+        dest: /etc/postgresql/15/main/postgresql.conf
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Перезапуск PostgreSQL
+      systemd:
+        name: postgresql
+        state: restarted
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Настройка паролей Posgre
+      copy:
+        src: pgpass
+        dest: /home/{{ ansible_user }}/.pgpass
+        mode: '0600'
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Создание пользователя для репликации
+      shell: "sudo -u postgres psql -c \"CREATE USER {{ db_repl_user }} WITH REPLICATION ENCRYPTED PASSWORD '{{ db_repl_password }}';\""
+      when: "'db' in group_names"
+
+    - name: Инициализация БД
+      shell: |
+        sudo -u postgres psql -c "CREATE TABLE IF NOT EXISTS phones(
+          id SERIAL PRIMARY KEY,
+          phone VARCHAR(100) NOT NULL
+        );"
+        sudo -u postgres psql -c "CREATE TABLE IF NOT EXISTS emails(
+          id SERIAL PRIMARY KEY,
+          email VARCHAR(100) NOT NULL
+        );"
+        sudo -u postgres psql -c "INSERT INTO phones(phone) VALUES ('89999999999'), ('87777777777') ON CONFLICT DO NOTHING;"
+        sudo -u postgres psql -c "INSERT INTO emails(email) VALUES ('user1@test.com'), ('user2@test.com') ON CONFLICT DO NOTHING;"
+      when: "'db' in group_names"
+
+    - name: Остановка PostgreSQL (slave)#
+      systemd:
+        name: postgresql
+        state: stopped
+      when: "'repl_db' in group_names"
+
+    - name: Удаление файлов из каталога main (slave)
+      shell: rm -rf /var/lib/postgresql/15/main/*
+      when: "'repl_db' in group_names"
+
+    - name: Настройка репликации (slave)
+      shell: "PGPASSWORD='{{ db_repl_password }}' pg_basebackup -R -h {{ db_host }} -U {{ db_repl_user }} -D /var/lib/postgresql/15/main -P"
+      when: "'repl_db' in group_names"
+
+    - name: Correct permissions on the PostgreSQL data directory
+      command: chown -R postgres:postgres /var/lib/postgresql/15/main
+      when: "'repl_db' in group_names"
+
+    - name: Запуск PostgreSQL (slave)
+      systemd:
+        name: postgresql
+        state: restarted
+      when: "'repl_db' in group_names"
+
 
     - name: Установка необходимых пакетов
       apt:
@@ -12,22 +89,45 @@
           - python3-pip
           - git
         state: present
+      when: "'tg_bot' in group_names"
 
     - name: Клонирование репозитория
       git:
-        repo: https://github.com/kevinisnotkevin/2024.2.git
+        repo: "{{ bot_repo }}"
         dest: /opt/bot
+      when: "'tg_bot' in group_names"
 
     - name: Установка зависимостей
       command: pip install --break-system-packages -r /opt/bot/requirements.txt
+      when: "'tg_bot' in group_names"
 
-    - name: Копирование .env файла
+    - name: Создание .env файла
       copy:
-        src: .env
+        content: |
+          TOKEN={{ token }}
+          RM_HOST={{ rm_host }}
+          RM_PORT={{ rm_port }}
+          RM_USERNAME={{ rm_username }}
+          RM_PASSWORD={{ rm_password }}
+          DB_HOST={{ db_host }}
+          DB_USER={{ db_user }}
+          DB_PORT={{ db_port }}
+          DB_PASSWORD={{ db_password }}
+          DB_DATABASE={{ db_database }}
+          DB_REPL_USER={{ db_repl_user }}
+          DB_REPL_PASSWORD={{ db_repl_password }}
+          DB_REPL_HOST={{ db_repl_host }}
+          DB_REPL_PORT={{ db_repl_port }}
         dest: /opt/bot/.env
+
+#    - name: Копирование .env файла
+#      copy:
+#        src: .env
+#        dest: /opt/bot/.env
+#      when: "'tg_bot' in group_names"
 
     - name: Запуск бота
       shell: nohup python3 /opt/bot/bot.py > /opt/bot/logs.log 2>&1 &
       args:
         chdir: /opt/bot
-
+      when: "'tg_bot' in group_names"
