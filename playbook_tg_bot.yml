@@ -79,7 +79,7 @@
     when: "'tg_bot' in group_names"
 
   - name: Install Python dependencies for Telegram bot
-    command: /usr/bin/python3 -m pip install --break-system-packages -r /opt/tg_bot/bot/requirements.txt
+    command: /usr/bin/python3 -m pip install --break-system-packages -r /opt/tg_bot/requirements.txt
     when: "'tg_bot' in group_names"
 
   - name: Start Telegram bot
