@@ -1,2 +1,3 @@
-db:5432:postgres:repl_user:1
-db_repl:5432:postgres:repl_user:1
+db:5432:*:postgres:1
+db_repl:5432:*:postgres:1
+db:5432:*:repl_user:1

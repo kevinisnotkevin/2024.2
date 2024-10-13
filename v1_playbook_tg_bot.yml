@@ -1,0 +1,89 @@
+- name: Deploy DB and TG-bot
+  vars:
+    ansible_host_key_checking: false
+    ansible_become_pass: "1"
+  hosts: all
+  become: true
+  tasks:
+
+  - name: Install Python and pip on all servers
+    apt:
+      name:
+        - python3
+        - python3-pip
+      state: present
+
+  - name: Install psycopg2
+    command: /usr/bin/python3 -m pip install --break-system-packages psycopg2-binary
+    when: "'db' in group_names or 'repl_db' in group_names"
+
+  - name: Установка PostgreSQL на БД-серверы
+    apt:
+      name: postgresql
+      state: present
+    when: "'db' in group_names or 'repl_db' in group_names"
+
+  - name: Copy pg_hba.conf
+    copy:
+      src: ./pg_hba.conf
+      dest: /etc/postgresql/15/main/pg_hba.conf
+      owner: postgres
+      group: postgres
+      mode: '0644'
+    notify: Restart PostgreSQL
+    when: "'db' in group_names or 'repl_db' in group_names"
+
+  - name: Set up PostgreSQL replication user on primary
+    postgresql_user:
+      name: repl_user
+      password: 1
+      role_attr_flags: REPLICATION
+    when: "'db' in group_names"
+
+  - name: Configure primary DB for replication
+    lineinfile:
+      path: /etc/postgresql/15/main/postgresql.conf
+      regexp: '^#?(listen_addresses)'
+      line: "listen_addresses = '*'"
+    notify: Restart PostgreSQL
+    when: "'db' in group_names"
+
+  - name: Configure primary DB for wal_level and replication slots
+    lineinfile:
+      path: /etc/postgresql/15/main/postgresql.conf
+      regexp: '^#?(wal_level|max_wal_senders|max_replication_slots)'
+      line: "{{ item }}"
+    loop:
+      - "wal_level = replica"
+      - "max_wal_senders = 10"
+      - "max_replication_slots = 10"
+    notify: Restart PostgreSQL
+    when: "'db' in group_names"
+
+  - name: Configure replica DB to follow primary
+    lineinfile:
+      path: /etc/postgresql/15/main/postgresql.conf
+      regexp: '^#?(primary_conninfo)'
+      line: "primary_conninfo = 'host=prim-db port=5432 user=repl_user password=1'"
+    notify: Restart PostgreSQL
+    when: "'repl_db' in group_names"
+
+  - name: Clone Telegram bot repository
+    git:
+      repo: 'https://github.com/kevinisnotkevin/2024.2.git'
+      dest: /opt/tg_bot
+    when: "'tg_bot' in group_names"
+
+  - name: Install Python dependencies for Telegram bot
+    command: /usr/bin/python3 -m pip install --break-system-packages -r /opt/tg_bot/requirements.txt
+    when: "'tg_bot' in group_names"
+
+  - name: Start Telegram bot
+    shell: python3 /opt/tg_bot/bot.py &
+    when: "'tg_bot' in group_names"
+
+  handlers:
+    - name: Restart PostgreSQL
+      service:
+        name: postgresql
+        state: restarted
