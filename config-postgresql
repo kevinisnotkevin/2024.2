@@ -1,0 +1,2 @@
+primary_conninfo = 'host=db port=5432 user=repl_user password=1'
+standby_mode = 'on'
