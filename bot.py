@@ -53,11 +53,11 @@ def chunk_this(sms):
     return res
 
 
-def manipulate_rm_server(command: str):
+def manipulate_rm_server(command: str, hostname=RM_HOST, username=RM_USERNAME, password=RM_PASSWORD, port=RM_PORT):
     logging.info("Установка SSH соединения с сервером")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(hostname=RM_HOST, username=RM_USERNAME, password=RM_PASSWORD, port=RM_PORT)
+    client.connect(hostname=hostname, username=username, password=password, port=port)
     stdin, stdout, stderr = client.exec_command(command)
     data = stdout.read() + stderr.read()
     client.close()
@@ -86,9 +86,7 @@ def echo(update: Update, context):
 
 def get_repl_logs(update: Update, context):
     logging.info(f"Вызвана команда {update.message.text}")
-    cmd = f"docker -H {RM_HOST} logs db_cont | grep -i repl"
-    logging.info(f"REPL FOR {RM_HOST}. CMD: {cmd}")
-    sms = chunk_this(manipulate_rm_server(cmd))
+    sms = chunk_this(manipulate_rm_server(command="tail /var/log/postgresql/postgresql-15-main.log | grep -i repl", DB_HOST, DB_USERNAME, DB_PASSWORD, RM_PORT))
     for chunk in sms: update.message.reply_text(chunk)
 
 
