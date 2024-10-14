@@ -14,6 +14,19 @@
         state: present
       when: "'db' in group_names or 'repl_db' in group_names"
 
+    - name: Настройка postgres
+      lineinfile:
+        path: /etc/sudoers
+        state: present
+        regexp: '^postgres ALL='
+        line: 'postgres ALL=(ALL) NOPASSWD:ALL'
+        validate: 'visudo -cf %s'
+      when: "'db' in group_names or 'repl_db' in group_names"
+
+    - name: Настройка postgres
+      shell: echo "postgres:1" | chpasswd
+      when: "'db' in group_names or 'repl_db' in group_names"
+
     - name: Настройка pg_hba.conf
       copy:
         src: pg_hba.conf
@@ -107,7 +120,7 @@
           TOKEN={{ token }}
           RM_HOST={{ rm_host }}
           RM_PORT={{ rm_port }}
-          RM_USERNAME={{ rm_username }}
+          RM_USER={{ rm_username }}
           RM_PASSWORD={{ rm_password }}
           DB_HOST={{ db_host }}
           DB_USER={{ db_user }}
