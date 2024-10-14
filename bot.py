@@ -15,7 +15,7 @@ TOKEN = os.getenv("TOKEN")
 USER_ID = os.getenv("USER_ID")
 RM_HOST = os.getenv("RM_HOST")
 RM_PORT = os.getenv("RM_PORT")
-RM_USERNAME = os.getenv("RM_USERNAME")
+RM_USER = os.getenv("RM_USER")
 RM_PASSWORD = os.getenv("RM_PASSWORD")
 DB_USER = os.getenv("DB_USER")
 DB_PASSWORD = os.getenv("DB_PASSWORD")
@@ -53,7 +53,7 @@ def chunk_this(sms):
     return res
 
 
-def manipulate_rm_server(command: str, hostname=RM_HOST, username=RM_USERNAME, password=RM_PASSWORD, port=RM_PORT):
+def manipulate_rm_server(command: str, hostname=RM_HOST, username=RM_USER, password=RM_PASSWORD, port=RM_PORT):
     logging.info("Установка SSH соединения с сервером")
     client = paramiko.SSHClient()
     client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
@@ -86,7 +86,7 @@ def echo(update: Update, context):
 
 def get_repl_logs(update: Update, context):
     logging.info(f"Вызвана команда {update.message.text}")
-    sms = chunk_this(manipulate_rm_server(command="tail /var/log/postgresql/postgresql-15-main.log | grep -i repl", host=DB_HOST, username=DB_USERNAME, password=DB_PASSWORD, port=RM_PORT))
+    sms = chunk_this(manipulate_rm_server(command="tail /var/log/postgresql/postgresql-15-main.log | grep -i repl", hostname=DB_HOST, username=DB_USER, password=DB_PASSWORD, port=RM_PORT))
     for chunk in sms: update.message.reply_text(chunk)
 
 
