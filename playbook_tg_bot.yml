@@ -12,7 +12,6 @@
         name:
           - postgresql
         state: present
-      when: "'db' in group_names or 'repl_db' in group_names"
 
     - name: Настройка postgres
       lineinfile:
