@@ -91,7 +91,7 @@ def get_repl_logs(update: Update, context):
 
 
 def db_request(update: Update, context):
-    TABLE_NAME = {"/get_phones": "phones", "/get_emails": "emails"}
+    TABLE_NAME = {"/get_phone_numbers": "phones", "/get_emails": "emails"}
     logging.info(f"Вызвана команда {update.message.text}")
     sms = chunk_this(manipulate_rm_server(
         f"PGPASSWORD={DB_PASSWORD} psql -U {DB_USER} -h {DB_HOST} -p {DB_PORT} -c \
@@ -265,7 +265,7 @@ def main():
     dp.add_handler(CommandHandler("get_services", execute_command))
     dp.add_handler(CommandHandler("get_repl_logs", get_repl_logs))
     dp.add_handler(CommandHandler("get_emails", db_request))
-    dp.add_handler(CommandHandler("get_phones", db_request))
+    dp.add_handler(CommandHandler("get_phone_numbers", db_request))
     dp.add_handler(convHandlerFindPhoneNumbers)
     dp.add_handler(convHandlerFindEmail)
     dp.add_handler(convHandlerCheckPass)
