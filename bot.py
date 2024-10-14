@@ -131,7 +131,7 @@ def getAptListCommand(update: Update, context):
 def findPhoneNumbers(update: Update, context):
     logging.info(f"Вызвана команда {update.message.text}")
     user_input = update.message.text
-    phoneNumRegex = re.compile(r'(\+7|8)(\d{10}|\s?\(\d{3}\)\s?\d{7}|\s?\d{3}\s?\d{3}\s?\d{2}\s?\d{2}|\s?\(\d{3}\)\s?\d{3}\s?\d{2}\s?\d{2}|\s?\d{3}-\d{3}-\d{2}-\d{2})')
+    phoneNumRegex = re.compile(r'(?:(?:\+7|8)[\s-]?(\(?\d{3}\)?)[\s-]?(\d{3})[\s-]?(\d{2})[\s-]?(\d{2}))')
     phoneNumberList = phoneNumRegex.findall(user_input)
     context.user_data['data'] = ["".join(i) for i in phoneNumberList]
     context.user_data["type"] = "phone"
