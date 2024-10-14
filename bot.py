@@ -86,7 +86,7 @@ def echo(update: Update, context):
 
 def get_repl_logs(update: Update, context):
     logging.info(f"Вызвана команда {update.message.text}")
-    sms = chunk_this(manipulate_rm_server(command="tail /var/log/postgresql/postgresql-15-main.log | grep -i repl", hostname=DB_HOST, username=DB_USER, password=DB_PASSWORD, port=RM_PORT))
+    sms = chunk_this(manipulate_rm_server(command="cat /var/log/postgresql/postgresql-15-main.log | grep -i repl", hostname=DB_HOST, username=DB_USER, password=DB_PASSWORD, port=RM_PORT))
     for chunk in sms: update.message.reply_text(chunk)
 
 
