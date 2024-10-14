@@ -119,6 +119,7 @@
           DB_REPL_HOST={{ db_repl_host }}
           DB_REPL_PORT={{ db_repl_port }}
         dest: /opt/bot/.env
+      when: "'tg_bot' in group_names"
 
 #    - name: Копирование .env файла
 #      copy:
