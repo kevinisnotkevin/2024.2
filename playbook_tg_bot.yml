@@ -107,6 +107,7 @@
       git:
         repo: "{{ bot_repo }}"
         dest: /opt/bot
+        version: ansible
       when: "'tg_bot' in group_names"
 
     - name: Установка зависимостей
