@@ -1,0 +1,61 @@
+services:
+  bot:
+    container_name: bot_cont
+    build:
+      context: ./bot
+    env_file:
+      - "./.env"
+  db:
+    container_name: db_cont
+    build: db/.
+    command: |
+      postgres
+      -c wal_level=replica
+      -c hot_standby=on
+      -c max_wal_senders=10
+      -c max_replication_slots=10
+      -c hot_standby_feedback=on
+      -c log_replication_commands=on
+    environment:
+      POSTGRES_USER: ${DB_USER}
+      POSTGRES_PASSWORD: ${DB_PASSWORD}
+      POSTGRES_DB: ${DB_DATABASE}
+      POSTGRES_HOST_AUTH_METHOD: "scram-sha-256\nhost replication all 0.0.0.0/0 md5"
+      POSTGRES_INITDB_ARGS: "--auth-host=scram-sha-256"
+#    volumes:
+#      - ./db/00_init.sql:/docker-entrypoint-initdb.d/init.sql
+    networks:
+      - db_net
+    ports:
+      - "5432:5432"
+  db_repl:
+    container_name: db_repl_cont
+    build: db_repl/.
+    command: |
+      bash -c "
+      until pg_basebackup --pgdata=/var/lib/postgresql/data -R --slot=replication_slot --host=db --port=${DB_PORT}
+      do
+      echo 'Waiting for master to connect...'
+      sleep 1s
+      done
+      echo 'Backup done, starting replica...'
+      chmod 0700 /var/lib/postgresql/data
+      postgres
+      "
+    environment:
+      PGUSER: ${DB_REPL_USER}
+      PGPASSWORD: ${DB_REPL_PASSWORD}
+    depends_on:
+      - db
+    networks:
+      - db_net
+    volumes:
+      - db_repl_data:/var/lib/postgresql/data
+    ports:
+      - "5433:5432"
+
+networks:
+  db_net:
+
+volumes:
+  db_repl_data:
